@@ -1,0 +1,4 @@
+mindspore==1.7.0
+opencv-python==4.6.0
+python==3.7.5
+numpy==1.21.6
