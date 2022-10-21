@@ -77,12 +77,12 @@ class MaskTransformer(nn.Cell):
         self.sqrt = ops.Sqrt()
 
     def construct(self, x):
-        x = self.proj_dec(x)               # (1, 2304, 1024)
-        cls_emb = self.tile(self.cls_embed, (x.shape[0], 1, 1)) # (1, 19, 1024)
-        x = self.cat_1((x, cls_emb))   # (1, 2323, 1024)
+        x = self.proj_dec(x)
+        cls_emb = self.tile(self.cls_embed, (x.shape[0], 1, 1))
+        x = self.cat_1((x, cls_emb))
         x = self.blocks(x)
         x = self.decoder_norm(x)
-        H, W = self.im_size         # 768, 768   1, 2304, 1024 -- 1, 19, 1024
+        H, W = self.im_size
         patches, cls_seg_feat = x[:, : -self.n_cls],  x[:, -self.n_cls :]
         patches = ops.matmul(patches, self.proj_patch)
         b1, h1, w1 = patches.shape
@@ -94,12 +94,12 @@ class MaskTransformer(nn.Cell):
         cls_l2_norm = self.sqrt(ops.matmul(cls_seg_feat ** 2, cls_ones_tensor))
         patches = patches / patch_l2_norm
         cls_seg_feat = cls_seg_feat / cls_l2_norm
-        cls_seg_feat = self.transpose(cls_seg_feat, (0, 2, 1))   # (1, 1024, 19)
-        masks = ops.matmul(patches, cls_seg_feat)  # (1, 2304, 1024)  -- (1, 1024, 19)
-        masks = self.mask_norm(masks)                # (1, 2304, 19)
+        cls_seg_feat = self.transpose(cls_seg_feat, (0, 2, 1))
+        masks = ops.matmul(patches, cls_seg_feat)
+        masks = self.mask_norm(masks)
         b, hw, n = masks.shape
-        masks_tensor = self.reshape(masks, (b, H // self.patch_size, hw // (H // self.patch_size), n))  # (1, 48, 48, 19)
-        masks = self.transpose(masks_tensor, (0, 3, 1, 2))  # (1, 19, 48, 48)  # (n, c, h, w)
+        masks_tensor = self.reshape(masks, (b, H // self.patch_size, hw // (H // self.patch_size), n))
+        masks = self.transpose(masks_tensor, (0, 3, 1, 2))   # (n, c, h, w)
         return masks
 
 

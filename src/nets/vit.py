@@ -18,8 +18,8 @@ class PatchEmbedding(nn.Cell):
 
         if image_size[0] % patch_size != 0 or image_size[1] % patch_size != 0:
             raise ValueError("image dimensions must be divisible by the patch size")
-        self.grid_size = (image_size[0] // patch_size, image_size[1] // patch_size)   # 48, 48
-        self.num_patches = self.grid_size[0] * self.grid_size[1]   # 2304
+        self.grid_size = (image_size[0] // patch_size, image_size[1] // patch_size)
+        self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.patch_size = patch_size
         self.transpose = ops.Transpose()
         self.reshape = ops.Reshape()
@@ -52,7 +52,7 @@ class VisionTransformer(nn.Cell):
                  distilled=False,
                  channels=3):
         super().__init__()
-        self.patch_embed = PatchEmbedding(image_size, patch_size, d_model, channels)   # (1024, 3)
+        self.patch_embed = PatchEmbedding(image_size, patch_size, d_model, channels)
         self.patch_size = patch_size
         self.n_layers = n_layers
         self.d_model = d_model
@@ -79,7 +79,7 @@ class VisionTransformer(nn.Cell):
         dpr = [x.item() for x in np.linspace(0.0, drop_path_rate, n_layers)]
         blocks = []
         for i in range(n_layers):
-            blk = Block(d_model, n_heads, d_ff, dropout, dpr[i])       # 1024, 16, 4096, 0.1, [0-0.1]
+            blk = Block(d_model, n_heads, d_ff, dropout, dpr[i])
             blocks.append(blk)
         self.blocks = SequentialCell(blocks)
         # output head
@@ -90,17 +90,17 @@ class VisionTransformer(nn.Cell):
     def construct(self, im, return_features=False):
         B, _, H, W = im.shape
         x = self.patch_embed(im)
-        cls_tokens = self.tile(self.cls_token, (B, 1, 1))   # (1,1,1024)
+        cls_tokens = self.tile(self.cls_token, (B, 1, 1))
         if self.distlled:
             dist_tokens = self.tile(self.dist_token, (B, 1, 1))
             x = self.cat_1((cls_tokens, dist_tokens, x))
         else:
-            x = self.cat_1((cls_tokens, x))           # (1, 2305, 1024)
-        pos_embed = self.pos_embed               # (1, 2305, 1024)
+            x = self.cat_1((cls_tokens, x))
+        pos_embed = self.pos_embed
         if x.shape[1] != pos_embed.shape[1]:
             raise ValueError
         x = x + pos_embed
-        x = self.dropout(x)   # (1, 2305, 1024)
+        x = self.dropout(x)
         x = self.blocks(x)
         x = self.norm(x)
         if return_features:
