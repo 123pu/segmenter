@@ -63,18 +63,14 @@ class MaskTransformer(nn.Cell):
             blk = Block(d_model, n_heads, d_ff, dropout, dpr[i])  # 1024, 16, 4096, 0.1, [0-0.1]
             blocks.append(blk)
         self.blocks = SequentialCell(blocks)
-        self.cls_embed = ms.Parameter(Tensor(np.random.randn(1, n_cls, d_model), ms.float32),
-                                      name="cls_embed", requires_grad=True)
-        # self.cls_embed = Parameter(initializer(initialization, (1, n_cls, d_model)),
-        #                            name='cls_embed', requires_grad=True)
+        self.cls_embed = Parameter(initializer(initialization, (1, n_cls, d_model)),
+                                   name='cls_embed', requires_grad=True)
         self.proj_dec = nn.Dense(d_encoder, d_model)     # 1024, 1024
         self.proj_dec.weight.set_data(initializer(init, [d_model, d_encoder]))
-        # self.proj_patch = Parameter(initializer(initialization, (d_model, d_model)),
-        #                             name='proj_patch', requires_grad=True)
-        self.proj_patch = ms.Parameter(self.scale * Tensor(np.random.randn(d_model, d_model), ms.float32))
-        # self.proj_classes = Parameter(initializer(initialization, (d_model, d_model)),
-        #                               name='proj_classes', requires_grad=True)
-        self.proj_classes = ms.Parameter(self.scale * Tensor(np.random.randn(d_model, d_model), ms.float32))
+        self.proj_patch = Parameter(initializer(initialization, (d_model, d_model)),
+                                    name='proj_patch', requires_grad=True)
+        self.proj_classes = Parameter(initializer(initialization, (d_model, d_model)),
+                                      name='proj_classes', requires_grad=True)
         self.decoder_norm = nn.LayerNorm((self.d_model,))
         self.mask_norm = nn.LayerNorm((self.n_cls,))
         self.reshape = ops.Reshape()
